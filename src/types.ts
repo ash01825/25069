@@ -1,5 +1,3 @@
-/// src/types.ts
-
 /**
  * Generic wrapper for values that might be user-set or system-guessed.
  * `isEstimated` tells us if it’s an assumption, and `confidence` (0–1) is optional.
