@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCA Tool - Life Cycle Assessment for Ores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        /* Wireframe styling */
+        .wireframe-section {
+            border: 2px solid #666;
+            margin: 20px;
+            background: white;
+            position: relative;
+        }
+        
+        .section-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #666;
+            color: white;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .wireframe-box {
+            border: 1px solid #999;
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .wireframe-input {
+            border: 1px solid #999;
+            background: white;
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .wireframe-button {
+            border: 2px solid #333;
+            background: #eee;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .wireframe-button.primary {
+            background: #333;
+            color: white;
+        }
+        
+        /* Header */
+        .header {
+            height: 70px;
+            border-bottom: 2px solid #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo-placeholder {
+            width: 150px;
+            height: 40px;
+            border: 1px solid #666;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .nav-placeholder {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-item {
+            padding: 10px 15px;
+            border: 1px solid #999;
+            background: #f5f5f5;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            padding: 60px 40px;
+            text-align: center;
+            background: #fff;
+        }
+        
+        .hero-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border: 2px dashed #666;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        
+        .hero-subtitle {
+            font-size: 24px;
+            margin-bottom: 40px;
+            padding: 15px;
+            border: 1px solid #999;
+            background: #f5f5f5;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        /* Main Dashboard Section */
+        .dashboard-section {
+            padding: 40px;
+            background: white;
+        }
+        
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 30px;
+            min-height: 600px;
+        }
+        
+        /* Left Panel - Data Input */
+        .left-panel {
+            border: 2px solid #666;
+            padding: 20px;
+            background: #fafafa;
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #333;
+            background: #eee;
+            text-align: center;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            border: 1px dashed #999;
+            padding: 15px;
+            background: white;
+        }
+        
+        .input-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .dropdown-placeholder {
+            height: 35px;
+            border: 1px solid #999;
+            background: white;
+            padding: 8px;
+            position: relative;
+        }
+        
+        .dropdown-placeholder::after {
+            content: '▼';
+            position: absolute;
+            right: 10px;
+            top: 8px;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 20px;
+            background: #ddd;
+            border: 1px solid #999;
+            border-radius: 10px;
+            outline: none;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #666;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #666;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .estimated-tag {
+            background: #ffd700;
+            color: #333;
+            padding: 2px 6px;
+            font-size: 10px;
+            border-radius: 3px;
+            margin-left: 5px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #999;
+            padding: 30px;
+            text-align: center;
+            background: #f9f9f9;
+            margin: 10px 0;
+        }
+        
+        /* Middle Panel - Dashboard Overview */
+        .middle-panel {
+            border: 2px solid #666;
+            padding: 20px;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .kpi-card {
+            border: 2px solid #333;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            min-height: 100px;
+        }
+        
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .kpi-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .chart-area {
+            border: 2px dashed #999;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        /* Right Panel - Output/Reports */
+        .right-panel {
+            border: 2px solid #666;
+            padding: 20px;
+            background: #fafafa;
+        }
+        
+        .comparison-chart {
+            border: 1px dashed #999;
+            height: 200px;
+            margin: 15px 0;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+        
+        .savings-display {
+            border: 2px solid #333;
+            padding: 30px;
+            text-align: center;
+            background: white;
+            margin: 15px 0;
+        }
+        
+        .big-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        /* Features Section */
+        .features-section {
+            padding: 60px 40px;
+            background: #f8f9fa;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            border: 2px solid #666;
+            padding: 30px;
+            background: white;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #333;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        /* Export Section */
+        .export-section {
+            padding: 40px;
+            background: white;
+            border-top: 2px solid #666;
+        }
+        
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .export-card {
+            border: 2px dashed #999;
+            padding: 20px;
+            text-align: center;
+            background: #f9f9f9;
+        }
+        
+        /* Recommendations Section */
+        .recommendations-section {
+            padding: 40px;
+            background: #f0f8ff;
+        }
+        
+        .recommendation-cards {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .recommendation-card {
+            flex: 1;
+            border: 1px solid #999;
+            padding: 20px;
+            background: white;
+        }
+        
+        .recommendation-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #e6f3ff;
+        }
+        
+        /* Footer */
+        .footer {
+            padding: 30px 40px;
+            background: #333;
+            color: white;
+            text-align: center;
+            border-top: 2px solid #666;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-layout,
+            .kpi-grid,
+            .features-grid,
+            .export-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-title {
+                font-size: 32px;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            width: 4px;
+            height: 200px;
+            background: #eee;
+            border: 1px solid #666;
+        }
+        
+        .scroll-thumb {
+            width: 100%;
+            height: 30px;
+            background: #666;
+            position: relative;
+            animation: scrollProgress 10s infinite linear;
+        }
+        
+        @keyframes scrollProgress {
+            0% { top: 0; }
+            100% { top: calc(100% - 30px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Scroll Indicator -->
+    <div class="scroll-indicator">
+        <div class="scroll-thumb"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-placeholder">[LCA Tool Logo]</div>
+        <nav class="nav-placeholder">
+            <div class="nav-item">Home</div>
+            <div class="nav-item">Dashboard</div>
+            <div class="nav-item">Reports</div>
+            <div class="nav-item">Help</div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="wireframe-section hero-section">
+        <div class="section-label">HERO SECTION</div>
+        <div class="hero-title">
+            AI-Driven Life Cycle Assessment Tool<br>
+            for Metallurgy & Mining
+        </div>
+        <div class="hero-subtitle">
+            Advancing Circularity and Sustainability with AI-Powered Analysis
+        </div>
+        <div class="hero-buttons">
+            <div class="wireframe-button primary">Start Analysis</div>
+            <div class="wireframe-button">View Demo</div>
+        </div>
+    </section>
+
+    <!-- Main Dashboard Section -->
+    <section class="wireframe-section dashboard-section">
+        <div class="section-label">MAIN DASHBOARD</div>
+        <div class="dashboard-layout">
+            
+            <!-- Left Panel - Data Input -->
+            <div class="left-panel">
+                <div class="panel-title">Data Input</div>
+                
+                <div class="input-group">
+                    <label class="input-label">Metal Selection</label>
+                    <select id="metalSelect" class="wireframe-input">
+                        <option value="aluminium">Aluminium</option>
+                        <option value="copper">Copper</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Energy Mix <span class="estimated-tag">ESTIMATED</span></label>
+                    <input type="range" id="energyMixSlider" min="0" max="100" value="45" class="slider">
+                    <div style="text-align: center; font-size: 12px;">
+                        <span id="energyMixValue">45</span>% Renewable
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Transport Distance <span class="estimated-tag">ESTIMATED</span></label>
+                    <input type="range" id="transportSlider" min="0" max="2000" value="500" class="slider">
+                    <div style="text-align: center; font-size: 12px;">
+                        <span id="transportValue">500</span> km
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Material Data (tonnes)</label>
+                    <input type="number" id="materialAmount" class="wireframe-input" placeholder="e.g., 1000" value="1000" min="0">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Scrap Content (%)</label>
+                    <input type="range" id="scrapContentSlider" min="0" max="100" value="30" class="slider">
+                    <div style="text-align: center; font-size: 12px;">
+                        <span id="scrapContentValue">30</span>%
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">End-of-Life Recovery Rate (%)</label>
+                    <input type="range" id="recoveryRateSlider" min="0" max="100" value="75" class="slider">
+                    <div style="text-align: center; font-size: 12px;">
+                        <span id="recoveryRateValue">75</span>%
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Emission Factors (Optional)</label>
+                    <div class="upload-area">
+                        Upload .csv / .xlsx<br>
+                        <small>Drag & drop or click to browse</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Panel - Dashboard Overview -->
+            <div class="middle-panel">
+                <div class="panel-title">Dashboard Overview - Product LCA</div>
+                
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="co2Value">12.4</div>
+                        <div class="kpi-label">CO₂e (kg/kg)</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="energyValue">165</div>
+                        <div class="kpi-label">Energy (MJ/kg)</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="circularityValue">72</div>
+                        <div class="kpi-label">Circularity Index</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="recycledContentValue">30%</div>
+                        <div class="kpi-label">Recycled Content</div>
+                    </div>
+                </div>
+                
+                <div class="chart-area">
+                    <canvas id="co2BreakdownChart" width="400" height="200"></canvas>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <div class="wireframe-button">Single View</div>
+                    <div class="wireframe-button">Side-by-Side</div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Output/Reports -->
+            <div class="right-panel">
+                <div class="panel-title">Output / Reports</div>
+                
+                <div style="margin-bottom: 30px;">
+                    <h4>Route Comparison Graph</h4>
+                    <div class="comparison-chart">
+                        <canvas id="routeComparisonChart" width="300" height="150"></canvas>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <h4>% Carbon Savings</h4>
+                    <div class="savings-display">
+                        <div class="big-number" id="carbonSavings">18%</div>
+                        <div style="font-size: 14px;">Potential Reduction</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4>LCA Flow Visualization</h4>
+                    <div id="sankeyDiagram" style="height: 200px; background: white; border: 1px solid #999;"></div>
+                </div>
+                
+                <div>
+                    <h4>Impact Charts</h4>
+                    <div class="comparison-chart" style="height: 120px;">
+                        <canvas id="impactBreakdownChart" width="300" height="100"></canvas>
+                    </div>
+                    <div class="comparison-chart" style="height: 120px;">
+                        <canvas id="materialRetentionChart" width="300" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="wireframe-section features-section">
+        <div class="section-label">FEATURES</div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="padding: 15px; border: 2px dashed #666;">Key Features & Capabilities</h2>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered Estimation</h3>
+                <div class="wireframe-box">Automatic data estimation for incomplete datasets using ML algorithms</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Interactive Visualizations</h3>
+                <div class="wireframe-box">Sankey diagrams, comparison charts, and real-time KPI updates</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">♻️</div>
+                <h3>Circularity Analysis</h3>
+                <div class="wireframe-box">Advanced metrics for circular economy assessment in metallurgy</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏭</div>
+                <h3>Metal-Specific Models</h3>
+                <div class="wireframe-box">Specialized algorithms for Aluminum and Copper production routes</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Recommendations Section -->
+    <section class="wireframe-section recommendations-section">
+        <div class="section-label">AI RECOMMENDATIONS</div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="padding: 15px; border: 2px dashed #666;">AI-Generated Optimization Suggestions</h2>
+        </div>
+        
+        <div class="recommendation-cards">
+            <div class="recommendation-card">
+                <div class="recommendation-title">🌱 Sustainability Boost</div>
+                <div class="wireframe-box">
+                    Increase renewable energy mix to 65% to reduce CO₂ emissions by 18%
+                </div>
+            </div>
+            <div class="recommendation-card">
+                <div class="recommendation-title">♻️ Circularity Enhancement</div>
+                <div class="wireframe-box">
+                    Improve scrap content to 45% to achieve 85+ circularity index
+                </div>
+            </div>
+            <div class="recommendation-card">
+                <div class="recommendation-title">⚡ Energy Optimization</div>
+                <div class="wireframe-box">
+                    Local sourcing can reduce transport energy by 25%
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Export & Data Management -->
+    <section class="wireframe-section export-section">
+        <div class="section-label">EXPORT & DATA MANAGEMENT</div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="padding: 15px; border: 2px dashed #666;">Data Export & Persistence</h2>
+        </div>
+        
+        <div class="export-options">
+            <div class="export-card">
+                <h3>Download Reports</h3>
+                <button class="wireframe-button primary" onclick="exportToJSON()">Export JSON</button>
+                <button class="wireframe-button" onclick="exportToCSV()">Export CSV</button>
+                <button class="wireframe-button" onclick="printReport()">Print Summary</button>
+            </div>
+            <div class="export-card">
+                <h3>Save Configuration</h3>
+                <button class="wireframe-button" onclick="saveConfiguration()">Save Current State</button>
+                <button class="wireframe-button" onclick="loadConfiguration()">Load Previous</button>
+                <button class="wireframe-button" onclick="resetConfiguration()">Reset All</button>
+            </div>
+            <div class="export-card">
+                <h3>Share Results</h3>
+                <button class="wireframe-button" onclick="generateShareLink()">Generate Link</button>
+                <button class="wireframe-button" onclick="copyResults()">Copy Results</button>
+                <button class="wireframe-button" onclick="downloadImage()">Download Charts</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Help & Documentation Section -->
+    <section class="wireframe-section" style="padding: 40px; background: #f8f9fa;">
+        <div class="section-label">HELP & DOCUMENTATION</div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="padding: 15px; border: 2px dashed #666;">Understanding LCA Calculations</h2>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+            <div class="feature-card">
+                <h3>🔬 Why Negative CO₂ Emissions?</h3>
+                <div class="wireframe-box">
+                    <strong>Negative emissions are scientifically valid!</strong><br><br>
+                    When recycling credits exceed process emissions, the result is net negative CO₂. This happens when:
+                    <ul style="text-align: left; margin: 10px 0;">
+                        <li>High recycled content (>50%)</li>
+                        <li>Large recycling credits (aluminium: -14.5 kg CO₂/kg)</li>
+                        <li>Efficient recycling processes</li>
+                    </ul>
+                    This means the recycled material saves more CO₂ than the process creates.
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📊 Calculation Method</h3>
+                <div class="wireframe-box">
+                    <strong>Total CO₂ = Primary + Transport + Recycling Credit</strong><br><br>
+                    <strong>Primary:</strong> Mining + Processing emissions<br>
+                    <strong>Transport:</strong> Distance × Transport factor<br>
+                    <strong>Recycling Credit:</strong> Recycled % × Credit factor<br><br>
+                    <em>Note: Recycling credits are negative (savings)</em>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🎯 Data Sources</h3>
+                <div class="wireframe-box">
+                    <strong>Industry-standard LCA factors:</strong><br><br>
+                    • Aluminium: Based on IAI data<br>
+                    • Copper: Based on ICSG data<br>
+                    • Energy factors: Grid emission factors<br>
+                    • Transport: Standard freight factors<br><br>
+                    <em>All values per kg of final product</em>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <h3>⚠️ Data Validation</h3>
+                <div class="wireframe-box">
+                    <strong>Warnings appear for:</strong><br><br>
+                    • Recycled content >90%<br>
+                    • Recovery rate >95%<br>
+                    • Energy mix <10% grid<br><br>
+                    <em>These help ensure realistic scenarios</em>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: white; border: 2px solid #666; border-radius: 5px;">
+            <h3 style="text-align: center; margin-bottom: 15px;">Quick Reference</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; text-align: center;">
+                <div>
+                    <strong>Aluminium Recycling Credit:</strong><br>
+                    -14.5 kg CO₂/kg
+                </div>
+                <div>
+                    <strong>Copper Recycling Credit:</strong><br>
+                    -4.8 kg CO₂/kg
+                </div>
+                <div>
+                    <strong>Typical Primary Aluminium:</strong><br>
+                    ~12-15 kg CO₂/kg
+                </div>
+                <div>
+                    <strong>Typical Primary Copper:</strong><br>
+                    ~3-5 kg CO₂/kg
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="section-label">FOOTER</div>
+        <div class="wireframe-box">
+            Footer content: Links, Contact, About, Terms<br>
+            © 2024 AI-Driven LCA Tool for Metallurgy & Mining
+        </div>
+    </footer>
+
+    <script>
+        // LCA Engine Implementation
+        const lcaFactors = {
+            "aluminium": {
+                "reusePotentialFraction": 0.9,
+                "primaryProduction": {
+                    "mining_energy_MJ": 25,
+                    "mining_direct_emissions_CO2e": 1.5,
+                    "processing_energy_MJ": 155,
+                    "EF_energy_grid_CO2e_per_MJ": 0.11
+                },
+                "recycling": {
+                    "recycling_credit_CO2e": -14.5,
+                    "recycling_energy_MJ": 10
+                },
+                "transport": {
+                    "EF_transport_CO2e_per_tkm": 0.1
+                },
+                "otherImpacts": {
+                    "water_m3": 1.2
+                }
+            },
+            "copper": {
+                "reusePotentialFraction": 0.85,
+                "primaryProduction": {
+                    "mining_energy_MJ": 30,
+                    "mining_direct_emissions_CO2e": 0.8,
+                    "processing_energy_MJ": 60,
+                    "EF_energy_grid_CO2e_per_MJ": 0.11
+                },
+                "recycling": {
+                    "recycling_credit_CO2e": -4.8,
+                    "recycling_energy_MJ": 15
+                },
+                "transport": {
+                    "EF_transport_CO2e_per_tkm": 0.1
+                },
+                "otherImpacts": {
+                    "water_m3": 0.4
+                }
+            }
+        };
+
+        function computeImpacts(inputs, factors) {
+            const { recycledContentFraction, transportDistanceKm, energyMix } = inputs;
+            const primaryMaterialShare = 1 - recycledContentFraction;
+
+            // CO2e calculations
+            const co2e_mining = primaryMaterialShare * (
+                factors.primaryProduction.mining_direct_emissions_CO2e +
+                factors.primaryProduction.mining_energy_MJ * 
+                factors.primaryProduction.EF_energy_grid_CO2e_per_MJ * 
+                energyMix
+            );
+
+            const co2e_processing = primaryMaterialShare * (
+                factors.primaryProduction.processing_energy_MJ * 
+                factors.primaryProduction.EF_energy_grid_CO2e_per_MJ * 
+                energyMix
+            );
+
+            const co2e_transport = transportDistanceKm * 0.001 * factors.transport.EF_transport_CO2e_per_tkm;
+            const co2e_recyclingCredit = recycledContentFraction * factors.recycling.recycling_credit_CO2e;
+            const totalCO2e = co2e_mining + co2e_processing + co2e_transport + co2e_recyclingCredit;
+
+            // Energy calculations
+            const energy_primary = primaryMaterialShare * (
+                factors.primaryProduction.mining_energy_MJ + 
+                factors.primaryProduction.processing_energy_MJ
+            );
+            const energy_recycling = recycledContentFraction * factors.recycling.recycling_energy_MJ;
+            const totalEnergy = energy_primary + energy_recycling;
+
+            // Water
+            const totalWater = factors.otherImpacts.water_m3;
+
+            return {
+                totalCO2e,
+                totalEnergy,
+                totalWater,
+                breakdown: {
+                    co2e: {
+                        mining: co2e_mining,
+                        processing: co2e_processing,
+                        transport: co2e_transport,
+                        recyclingCredit: co2e_recyclingCredit
+                    },
+                    energy: {
+                        mining: primaryMaterialShare * factors.primaryProduction.mining_energy_MJ,
+                        processing: primaryMaterialShare * factors.primaryProduction.processing_energy_MJ,
+                        recycling: energy_recycling
+                    }
+                }
+            };
+        }
+
+        function computeCircularityIndex(inputs, factors) {
+            const { recycledContentFraction, endOfLifeRecoveryRate } = inputs;
+            const recycledContentComponent = 0.4 * recycledContentFraction;
+            const reusePotentialComponent = 0.3 * factors.reusePotentialFraction;
+            const materialRetentionComponent = 0.3 * endOfLifeRecoveryRate;
+            const index = (recycledContentComponent + reusePotentialComponent + materialRetentionComponent) * 100;
+            return Math.round(index);
+        }
+
+        function generateSankeyData(inputs) {
+            const { recycledContentFraction, endOfLifeRecoveryRate } = inputs;
+            const primaryShare = 1 - recycledContentFraction;
+            const landfillShare = 1 - endOfLifeRecoveryRate;
+
+            const nodes = [
+                { name: 'Virgin Material' },
+                { name: 'Recycled Scrap' },
+                { name: 'Processing' },
+                { name: 'Final Product' },
+                { name: 'End of Life' },
+                { name: 'Recovered' },
+                { name: 'Landfilled' }
+            ];
+
+            const links = [
+                { source: 0, target: 2, value: primaryShare },
+                { source: 1, target: 2, value: recycledContentFraction },
+                { source: 2, target: 3, value: 1.0 },
+                { source: 3, target: 4, value: 1.0 },
+                { source: 4, target: 5, value: endOfLifeRecoveryRate },
+                { source: 4, target: 6, value: landfillShare }
+            ];
+
+            return {
+                nodes,
+                links: links.filter(link => link.value > 0.001)
+            };
+        }
+
+        function calculateLCA(inputs) {
+            const factors = lcaFactors[inputs.metal];
+            const impacts = computeImpacts(inputs, factors);
+            const circularityIndex = computeCircularityIndex(inputs, factors);
+            const sankeyData = generateSankeyData(inputs);
+
+            return {
+                summary: {
+                    totalCO2e_kg: impacts.totalCO2e,
+                    totalEnergy_MJ: impacts.totalEnergy,
+                    totalWater_m3: impacts.totalWater,
+                    circularityIndex: circularityIndex
+                },
+                breakdown: impacts.breakdown,
+                sankey: sankeyData
+            };
+        }
+
+        // Chart instances
+        let co2BreakdownChart, routeComparisonChart, impactBreakdownChart, materialRetentionChart;
+
+        function updateUI() {
+            const inputs = {
+                metal: document.getElementById('metalSelect').value,
+                recycledContentFraction: parseFloat(document.getElementById('scrapContentSlider').value) / 100,
+                transportDistanceKm: parseFloat(document.getElementById('transportSlider').value),
+                energyMix: parseFloat(document.getElementById('energyMixSlider').value) / 100,
+                endOfLifeRecoveryRate: parseFloat(document.getElementById('recoveryRateSlider').value) / 100
+            };
+
+            const result = calculateLCA(inputs);
+            const materialAmount = parseFloat(document.getElementById('materialAmount').value) || 1000;
+
+            // Update KPI cards
+            const co2Value = result.summary.totalCO2e_kg;
+            const co2Display = co2Value < 0 ? 
+                `-${Math.abs(co2Value).toFixed(1)}` : 
+                co2Value.toFixed(1);
+            
+            document.getElementById('co2Value').textContent = co2Display;
+            document.getElementById('co2Value').style.color = co2Value < 0 ? '#4CAF50' : '#333';
+            document.getElementById('energyValue').textContent = result.summary.totalEnergy_MJ.toFixed(0);
+            document.getElementById('circularityValue').textContent = result.summary.circularityIndex;
+            document.getElementById('recycledContentValue').textContent = Math.round(inputs.recycledContentFraction * 100) + '%';
+            
+            // Add explanation for negative emissions
+            updateCO2Explanation(co2Value, inputs);
+            
+            // Validate inputs and show warnings
+            validateInputs();
+
+            // Update charts
+            updateCO2BreakdownChart(result.breakdown.co2e);
+            updateRouteComparisonChart(inputs, result);
+            updateImpactBreakdownChart(result.breakdown);
+            updateMaterialRetentionChart(inputs);
+            updateSankeyDiagram(result.sankey);
+
+            // Calculate carbon savings (simplified)
+            const primaryScenario = calculateLCA({...inputs, recycledContentFraction: 0});
+            const currentScenario = result;
+            const savings = ((primaryScenario.summary.totalCO2e_kg - currentScenario.summary.totalCO2e_kg) / primaryScenario.summary.totalCO2e_kg) * 100;
+            document.getElementById('carbonSavings').textContent = Math.max(0, Math.round(savings)) + '%';
+        }
+
+        function updateCO2BreakdownChart(breakdown) {
+            const ctx = document.getElementById('co2BreakdownChart').getContext('2d');
+            
+            if (co2BreakdownChart) {
+                co2BreakdownChart.destroy();
+            }
+
+            co2BreakdownChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mining', 'Processing', 'Transport', 'Recycling Credit'],
+                    datasets: [{
+                        data: [
+                            Math.max(0, breakdown.mining),
+                            Math.max(0, breakdown.processing),
+                            Math.max(0, breakdown.transport),
+                            Math.abs(breakdown.recyclingCredit)
+                        ],
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRouteComparisonChart(inputs, result) {
+            const ctx = document.getElementById('routeComparisonChart').getContext('2d');
+            
+            if (routeComparisonChart) {
+                routeComparisonChart.destroy();
+            }
+
+            const primaryScenario = calculateLCA({...inputs, recycledContentFraction: 0});
+            
+            routeComparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Primary Route', 'Current Route'],
+                    datasets: [{
+                        label: 'CO₂ (kg/kg)',
+                        data: [primaryScenario.summary.totalCO2e_kg, result.summary.totalCO2e_kg],
+                        backgroundColor: ['#ff6384', '#36a2eb']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateImpactBreakdownChart(breakdown) {
+            const ctx = document.getElementById('impactBreakdownChart').getContext('2d');
+            
+            if (impactBreakdownChart) {
+                impactBreakdownChart.destroy();
+            }
+
+            impactBreakdownChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mining', 'Processing', 'Recycling'],
+                    datasets: [{
+                        label: 'Energy (MJ/kg)',
+                        data: [breakdown.energy.mining, breakdown.energy.processing, breakdown.energy.recycling],
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMaterialRetentionChart(inputs) {
+            const ctx = document.getElementById('materialRetentionChart').getContext('2d');
+            
+            if (materialRetentionChart) {
+                materialRetentionChart.destroy();
+            }
+
+            materialRetentionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Virgin', 'Recycled', 'Recovered', 'Lost'],
+                    datasets: [{
+                        label: 'Material Flow (%)',
+                        data: [
+                            (1 - inputs.recycledContentFraction) * 100,
+                            inputs.recycledContentFraction * 100,
+                            inputs.endOfLifeRecoveryRate * 100,
+                            (1 - inputs.endOfLifeRecoveryRate) * 100
+                        ],
+                        borderColor: '#36a2eb',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSankeyDiagram(sankeyData) {
+            const container = d3.select('#sankeyDiagram');
+            container.selectAll('*').remove();
+
+            const width = 300;
+            const height = 200;
+            const svg = container.append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Simple flow visualization
+            const nodeWidth = 60;
+            const nodeHeight = 30;
+            const spacing = (width - 3 * nodeWidth) / 4;
+
+            // Draw nodes
+            const nodes = [
+                { x: spacing, y: height/2 - nodeHeight/2, name: 'Virgin' },
+                { x: spacing, y: height/2 + nodeHeight/2, name: 'Recycled' },
+                { x: spacing * 2 + nodeWidth, y: height/2 - nodeHeight/2, name: 'Processing' },
+                { x: spacing * 3 + nodeWidth * 2, y: height/2 - nodeHeight/2, name: 'Product' }
+            ];
+
+            nodes.forEach((node, i) => {
+                svg.append('rect')
+                    .attr('x', node.x)
+                    .attr('y', node.y)
+                    .attr('width', nodeWidth)
+                    .attr('height', nodeHeight)
+                    .attr('fill', '#e0e0e0')
+                    .attr('stroke', '#666');
+
+                svg.append('text')
+                    .attr('x', node.x + nodeWidth/2)
+                    .attr('y', node.y + nodeHeight/2 + 5)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '10px')
+                    .text(node.name);
+            });
+
+            // Draw flows
+            const flows = sankeyData.links;
+            flows.forEach(flow => {
+                if (flow.value > 0.01) {
+                    const source = nodes[flow.source];
+                    const target = nodes[flow.target];
+                    
+                    svg.append('path')
+                        .attr('d', `M ${source.x + nodeWidth} ${source.y + nodeHeight/2} 
+                                   Q ${(source.x + target.x + nodeWidth)/2} ${source.y + nodeHeight/2 - 20}
+                                    ${target.x} ${target.y + nodeHeight/2}`)
+                        .attr('stroke', '#36a2eb')
+                        .attr('stroke-width', Math.max(2, flow.value * 10))
+                        .attr('fill', 'none');
+                }
+            });
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Slider event listeners
+            document.getElementById('energyMixSlider').addEventListener('input', function() {
+                document.getElementById('energyMixValue').textContent = this.value;
+                updateUI();
+            });
+
+            document.getElementById('transportSlider').addEventListener('input', function() {
+                document.getElementById('transportValue').textContent = this.value;
+                updateUI();
+            });
+
+            document.getElementById('scrapContentSlider').addEventListener('input', function() {
+                document.getElementById('scrapContentValue').textContent = this.value;
+                updateUI();
+            });
+
+            document.getElementById('recoveryRateSlider').addEventListener('input', function() {
+                document.getElementById('recoveryRateValue').textContent = this.value;
+                updateUI();
+            });
+
+            // Other input listeners
+            document.getElementById('metalSelect').addEventListener('change', updateUI);
+            document.getElementById('materialAmount').addEventListener('input', updateUI);
+
+            // Initial calculation
+            updateUI();
+        });
+
+        // Export functions
+        function exportToJSON() {
+            const inputs = {
+                metal: document.getElementById('metalSelect').value,
+                recycledContentFraction: parseFloat(document.getElementById('scrapContentSlider').value) / 100,
+                transportDistanceKm: parseFloat(document.getElementById('transportSlider').value),
+                energyMix: parseFloat(document.getElementById('energyMixSlider').value) / 100,
+                endOfLifeRecoveryRate: parseFloat(document.getElementById('recoveryRateSlider').value) / 100,
+                materialAmount: parseFloat(document.getElementById('materialAmount').value) || 1000
+            };
+            
+            const result = calculateLCA(inputs);
+            const exportData = {
+                inputs: inputs,
+                results: result,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lca-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportToCSV() {
+            const inputs = {
+                metal: document.getElementById('metalSelect').value,
+                recycledContentFraction: parseFloat(document.getElementById('scrapContentSlider').value) / 100,
+                transportDistanceKm: parseFloat(document.getElementById('transportSlider').value),
+                energyMix: parseFloat(document.getElementById('energyMixSlider').value) / 100,
+                endOfLifeRecoveryRate: parseFloat(document.getElementById('recoveryRateSlider').value) / 100,
+                materialAmount: parseFloat(document.getElementById('materialAmount').value) || 1000
+            };
+            
+            const result = calculateLCA(inputs);
+            
+            const csvContent = [
+                'Parameter,Value',
+                `Metal,${inputs.metal}`,
+                `Recycled Content (%),${(inputs.recycledContentFraction * 100).toFixed(1)}`,
+                `Transport Distance (km),${inputs.transportDistanceKm}`,
+                `Energy Mix (%),${(inputs.energyMix * 100).toFixed(1)}`,
+                `End-of-Life Recovery (%),${(inputs.endOfLifeRecoveryRate * 100).toFixed(1)}`,
+                `Material Amount (tonnes),${inputs.materialAmount}`,
+                '',
+                'LCA Results',
+                `Total CO2e (kg/kg),${result.summary.totalCO2e_kg.toFixed(3)}`,
+                `Total Energy (MJ/kg),${result.summary.totalEnergy_MJ.toFixed(1)}`,
+                `Total Water (m3/kg),${result.summary.totalWater_m3.toFixed(3)}`,
+                `Circularity Index,${result.summary.circularityIndex}`,
+                '',
+                'CO2e Breakdown',
+                `Mining,${result.breakdown.co2e.mining.toFixed(3)}`,
+                `Processing,${result.breakdown.co2e.processing.toFixed(3)}`,
+                `Transport,${result.breakdown.co2e.transport.toFixed(3)}`,
+                `Recycling Credit,${result.breakdown.co2e.recyclingCredit.toFixed(3)}`,
+                '',
+                'Energy Breakdown',
+                `Mining,${result.breakdown.energy.mining.toFixed(1)}`,
+                `Processing,${result.breakdown.energy.processing.toFixed(1)}`,
+                `Recycling,${result.breakdown.energy.recycling.toFixed(1)}`
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lca-report-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        function saveConfiguration() {
+            const config = {
+                metal: document.getElementById('metalSelect').value,
+                energyMix: document.getElementById('energyMixSlider').value,
+                transportDistance: document.getElementById('transportSlider').value,
+                materialAmount: document.getElementById('materialAmount').value,
+                scrapContent: document.getElementById('scrapContentSlider').value,
+                recoveryRate: document.getElementById('recoveryRateSlider').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('lcaConfiguration', JSON.stringify(config));
+            alert('Configuration saved successfully!');
+        }
+
+        function loadConfiguration() {
+            const saved = localStorage.getItem('lcaConfiguration');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('metalSelect').value = config.metal;
+                document.getElementById('energyMixSlider').value = config.energyMix;
+                document.getElementById('transportSlider').value = config.transportDistance;
+                document.getElementById('materialAmount').value = config.materialAmount;
+                document.getElementById('scrapContentSlider').value = config.scrapContent;
+                document.getElementById('recoveryRateSlider').value = config.recoveryRate;
+                
+                // Update display values
+                document.getElementById('energyMixValue').textContent = config.energyMix;
+                document.getElementById('transportValue').textContent = config.transportDistance;
+                document.getElementById('scrapContentValue').textContent = config.scrapContent;
+                document.getElementById('recoveryRateValue').textContent = config.recoveryRate;
+                
+                updateUI();
+                alert('Configuration loaded successfully!');
+            } else {
+                alert('No saved configuration found.');
+            }
+        }
+
+        function resetConfiguration() {
+            document.getElementById('metalSelect').value = 'aluminium';
+            document.getElementById('energyMixSlider').value = 45;
+            document.getElementById('transportSlider').value = 500;
+            document.getElementById('materialAmount').value = 1000;
+            document.getElementById('scrapContentSlider').value = 30;
+            document.getElementById('recoveryRateSlider').value = 75;
+            
+            // Update display values
+            document.getElementById('energyMixValue').textContent = '45';
+            document.getElementById('transportValue').textContent = '500';
+            document.getElementById('scrapContentValue').textContent = '30';
+            document.getElementById('recoveryRateValue').textContent = '75';
+            
+            updateUI();
+            alert('Configuration reset to defaults!');
+        }
+
+        function generateShareLink() {
+            const inputs = {
+                metal: document.getElementById('metalSelect').value,
+                energyMix: document.getElementById('energyMixSlider').value,
+                transportDistance: document.getElementById('transportSlider').value,
+                materialAmount: document.getElementById('materialAmount').value,
+                scrapContent: document.getElementById('scrapContentSlider').value,
+                recoveryRate: document.getElementById('recoveryRateSlider').value
+            };
+            
+            const encoded = btoa(JSON.stringify(inputs));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?config=${encoded}`;
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('Share link copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy this share link:', shareUrl);
+            });
+        }
+
+        function copyResults() {
+            const inputs = {
+                metal: document.getElementById('metalSelect').value,
+                recycledContentFraction: parseFloat(document.getElementById('scrapContentSlider').value) / 100,
+                transportDistanceKm: parseFloat(document.getElementById('transportSlider').value),
+                energyMix: parseFloat(document.getElementById('energyMixSlider').value) / 100,
+                endOfLifeRecoveryRate: parseFloat(document.getElementById('recoveryRateSlider').value) / 100,
+                materialAmount: parseFloat(document.getElementById('materialAmount').value) || 1000
+            };
+            
+            const result = calculateLCA(inputs);
+            
+            const summary = `LCA Results Summary:
+Metal: ${inputs.metal}
+CO2e: ${result.summary.totalCO2e_kg.toFixed(2)} kg/kg
+Energy: ${result.summary.totalEnergy_MJ.toFixed(1)} MJ/kg
+Circularity Index: ${result.summary.circularityIndex}
+Recycled Content: ${(inputs.recycledContentFraction * 100).toFixed(1)}%`;
+            
+            navigator.clipboard.writeText(summary).then(() => {
+                alert('Results copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy these results:', summary);
+            });
+        }
+
+        function downloadImage() {
+            // This would require additional libraries like html2canvas
+            alert('Chart download feature requires additional setup. Use browser print or screenshot instead.');
+        }
+
+        // Load configuration from URL parameters
+        function loadFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const configParam = urlParams.get('config');
+            if (configParam) {
+                try {
+                    const config = JSON.parse(atob(configParam));
+                    document.getElementById('metalSelect').value = config.metal || 'aluminium';
+                    document.getElementById('energyMixSlider').value = config.energyMix || 45;
+                    document.getElementById('transportSlider').value = config.transportDistance || 500;
+                    document.getElementById('materialAmount').value = config.materialAmount || 1000;
+                    document.getElementById('scrapContentSlider').value = config.scrapContent || 30;
+                    document.getElementById('recoveryRateSlider').value = config.recoveryRate || 75;
+                    
+                    // Update display values
+                    document.getElementById('energyMixValue').textContent = config.energyMix || 45;
+                    document.getElementById('transportValue').textContent = config.transportDistance || 500;
+                    document.getElementById('scrapContentValue').textContent = config.scrapContent || 30;
+                    document.getElementById('recoveryRateValue').textContent = config.recoveryRate || 75;
+                    
+                    updateUI();
+                } catch (e) {
+                    console.error('Error loading configuration from URL:', e);
+                }
+            }
+        }
+
+        // Add explanation for CO2 results
+        function updateCO2Explanation(co2Value, inputs) {
+            let explanation = document.getElementById('co2Explanation');
+            if (!explanation) {
+                explanation = document.createElement('div');
+                explanation.id = 'co2Explanation';
+                explanation.style.cssText = 'font-size: 12px; margin-top: 5px; padding: 8px; background: #f0f8ff; border-left: 3px solid #2196F3; border-radius: 3px;';
+                document.getElementById('co2Value').parentNode.appendChild(explanation);
+            }
+            
+            if (co2Value < 0) {
+                explanation.innerHTML = `✅ <strong>Net Carbon Negative!</strong><br>
+                Recycling credits (${(inputs.recycledContentFraction * 100).toFixed(0)}% recycled) exceed process emissions. 
+                This means the recycled material saves more CO₂ than the process creates.`;
+                explanation.style.background = '#e8f5e8';
+                explanation.style.borderLeftColor = '#4CAF50';
+            } else if (co2Value < 5) {
+                explanation.innerHTML = `🌱 <strong>Low Carbon Impact</strong><br>
+                Good environmental performance with ${(inputs.recycledContentFraction * 100).toFixed(0)}% recycled content.`;
+                explanation.style.background = '#fff3e0';
+                explanation.style.borderLeftColor = '#FF9800';
+            } else {
+                explanation.innerHTML = `⚠️ <strong>High Carbon Impact</strong><br>
+                Consider increasing recycled content or improving energy efficiency.`;
+                explanation.style.background = '#ffebee';
+                explanation.style.borderLeftColor = '#f44336';
+            }
+        }
+
+        // Add input validation
+        function validateInputs() {
+            const scrapContent = parseFloat(document.getElementById('scrapContentSlider').value);
+            const recoveryRate = parseFloat(document.getElementById('recoveryRateSlider').value);
+            const energyMix = parseFloat(document.getElementById('energyMixSlider').value);
+            
+            let warnings = [];
+            
+            if (scrapContent > 90) {
+                warnings.push('Very high recycled content (>90%) - verify data accuracy');
+            }
+            if (recoveryRate > 95) {
+                warnings.push('Very high recovery rate (>95%) - may be optimistic');
+            }
+            if (energyMix < 10) {
+                warnings.push('Very low grid energy mix - ensure renewable energy data is accurate');
+            }
+            
+            if (warnings.length > 0) {
+                showWarning(warnings.join('<br>'));
+            } else {
+                hideWarning();
+            }
+        }
+        
+        function showWarning(message) {
+            let warningDiv = document.getElementById('inputWarning');
+            if (!warningDiv) {
+                warningDiv = document.createElement('div');
+                warningDiv.id = 'inputWarning';
+                warningDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; max-width: 300px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);';
+                document.body.appendChild(warningDiv);
+            }
+            warningDiv.innerHTML = `⚠️ <strong>Data Validation Warning:</strong><br>${message}`;
+        }
+        
+        function hideWarning() {
+            const warningDiv = document.getElementById('inputWarning');
+            if (warningDiv) {
+                warningDiv.remove();
+            }
+        }
+
+        // Load configuration on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromURL();
+        });
+    </script>
+</body>
+</html>
