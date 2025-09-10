@@ -1,0 +1,20 @@
+{
+  "name": "lca-engine",
+  "version": "1.0.0",
+  "description": "A Life Cycle Assessment (LCA) engine with frontend and TypeScript backend.",
+  "main": "dist/lib/lcaEngine.js",
+  "types": "dist/lib/lcaEngine.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/lib/lcaEngine.js",
+  "test": "vitest run",
+  "serve": "npx serve ."
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
