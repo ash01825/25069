@@ -1,20 +1,28 @@
-[
-  {
-    "process_id": "COP_P_001",
-    "name": "Primary Copper Cathode",
-    "unit": "kg",
-    "gCO2_per_kg": 3000,
-    "energy_kWh_per_kg": 8.0,
-    "transport_km_per_kg": 800,
-    "source": "USLCI_PLACEHOLDER"
+{
+  "metadata": {
+    "source_database": "ELCD 3.0 & USLCI (Representative Values)",
+    "source_url": "https://nexus.openlca.org/",
+    "accessed_date": "2025-09-11",
+    "notes": "Values are representative for 1 kg of material output. Transport impact is a baseline assuming 500km by a 28t truck, calculated as (500 km * 0.13 kgCO2/t-km) / 1000 kg/t = 65 gCO2."
   },
-  {
-    "process_id": "COP_S_001",
-    "name": "Secondary Copper (from scrap)",
-    "unit": "kg",
-    "gCO2_per_kg": 700,
-    "energy_kWh_per_kg": 1.5,
-    "transport_km_per_kg": 150,
-    "source": "USLCI_PLACEHOLDER"
-  }
-]
+  "processes": [
+    {
+      "process_id": "CU_CATHODE_PRIMARY_V1",
+      "name": "Primary Copper Cathode",
+      "unit": "kg",
+      "gCO2_per_kg": 3800,
+      "energy_kWh_per_kg": 15.5,
+      "transport_gCO2_per_kg": 65,
+      "recycling_rate": 0.65
+    },
+    {
+      "process_id": "CU_CATHODE_RECYCLED_V1",
+      "name": "Recycled Copper Cathode",
+      "unit": "kg",
+      "gCO2_per_kg": 950,
+      "energy_kWh_per_kg": 3.9,
+      "transport_gCO2_per_kg": 65,
+      "recycling_rate": 0.90
+    }
+  ]
+}
