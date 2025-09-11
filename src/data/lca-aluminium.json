@@ -1,0 +1,20 @@
+[
+  {
+    "process_id": "ALU_P_001",
+    "name": "Primary Aluminium Ingot",
+    "unit": "kg",
+    "gCO2_per_kg": 12000,
+    "energy_kWh_per_kg": 15.0,
+    "transport_km_per_kg": 500,
+    "source": "ELCD_PLACEHOLDER"
+  },
+  {
+    "process_id": "ALU_R_001",
+    "name": "Recycled Aluminium Ingot",
+    "unit": "kg",
+    "gCO2_per_kg": 650,
+    "energy_kWh_per_kg": 0.8,
+    "transport_km_per_kg": 100,
+    "source": "ELCD_PLACEHOLDER"
+  }
+]

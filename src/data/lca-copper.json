@@ -1,0 +1,20 @@
+[
+  {
+    "process_id": "COP_P_001",
+    "name": "Primary Copper Cathode",
+    "unit": "kg",
+    "gCO2_per_kg": 3000,
+    "energy_kWh_per_kg": 8.0,
+    "transport_km_per_kg": 800,
+    "source": "USLCI_PLACEHOLDER"
+  },
+  {
+    "process_id": "COP_S_001",
+    "name": "Secondary Copper (from scrap)",
+    "unit": "kg",
+    "gCO2_per_kg": 700,
+    "energy_kWh_per_kg": 1.5,
+    "transport_km_per_kg": 150,
+    "source": "USLCI_PLACEHOLDER"
+  }
+]
