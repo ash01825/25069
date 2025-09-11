@@ -1,18 +1,29 @@
-// src/app/compare/page.tsx
 "use client"
 
-import { useState, useEffect } from "react" // Import useEffect
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Download, Info } from "lucide-react"
+import { ArrowLeft, Download, Info, Save } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
+import { useToast } from "@/components/ui/use-toast"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { Skeleton } from "@/components/ui/skeleton" // Import Skeleton
+import { Skeleton } from "@/components/ui/skeleton"
 import { StackedBar } from "@/components/StackedBar"
 import { Sankey } from "@/components/Sankey"
 import { ImputedBadge } from "@/components/ImputedBadge"
 
-// --- TYPE DEFINITIONS ---
 interface ProjectConfig {
     recycledContent: number
     gridEmissions: number
@@ -32,20 +43,20 @@ interface LcaResult {
 }
 
 export default function ComparePage() {
-    // Your existing state for sliders - no changes needed
     const [config, setConfig] = useState<ProjectConfig>({
-        recycledContent: 60, // Default to match your screenshot
+        recycledContent: 60,
         gridEmissions: 75,
         transportDistance: 5000,
         recyclingRate: 40,
     })
 
-    // --- NEW STATE MANAGEMENT FOR API DATA ---
     const [primaryResult, setPrimaryResult] = useState<LcaResult | null>(null);
     const [configuredResult, setConfiguredResult] = useState<LcaResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const [projectName, setProjectName] = useState("");
+    const { toast } = useToast();
 
-    // --- NEW DATA FETCHING LOGIC ---
     useEffect(() => {
         const fetchLcaData = async () => {
             setIsLoading(true);
@@ -76,15 +87,46 @@ export default function ComparePage() {
         fetchLcaData();
     }, [config]);
 
-    // Your existing handler function - no changes needed
     const handleConfigChange = (field: keyof ProjectConfig, value: number) => {
         setConfig(prevConfig => ({ ...prevConfig, [field]: value }));
     }
 
-    // Your existing PDF export function - no changes needed
     const handleExportPDF = () => { window.print(); }
 
-    // Dynamic recommendation logic
+    const handleSaveProject = async () => {
+        if (!projectName.trim()) {
+            toast({ title: "Project name cannot be empty.", variant: "destructive" });
+            return;
+        }
+
+        // Ensure we have results to save before proceeding.
+        if (!configuredResult) {
+            toast({ title: "Cannot save", description: "Please wait for results to be calculated.", variant: "destructive"});
+            return;
+        }
+
+        const { error } = await supabase
+            .from('projects')
+            .insert([{
+                name: projectName,
+                // We now save an object containing both inputs and outputs
+                project_data: {
+                    inputs: config,
+                    outputs: configuredResult
+                },
+                user_id: null
+            }]);
+
+        if (error) {
+            console.error("Error saving project:", error);
+            toast({ title: "Error saving project", description: error.message, variant: "destructive" });
+        } else {
+            toast({ title: "Project Saved!", description: `"${projectName}" has been saved successfully.` });
+            setIsSaveDialogOpen(false);
+            setProjectName("");
+        }
+    };
+
     const getRecommendation = () => {
         if (!configuredResult) return "Calculating...";
         const { gwpBreakdown } = configuredResult;
@@ -95,7 +137,7 @@ export default function ComparePage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            {/* Header (No changes needed) */}
+            {/* Header and other JSX remains the same */}
             <header className="border-b bg-white print:hidden">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
@@ -108,22 +150,55 @@ export default function ComparePage() {
                             </Link>
                             <h1 className="text-xl font-semibold text-slate-900">Quick Compare: Primary vs Recycled Aluminium</h1>
                         </div>
-                        <Button onClick={handleExportPDF} className="bg-blue-600 hover:bg-blue-700">
-                            <Download className="w-4 h-4 mr-2" />
-                            Export to PDF
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline">
+                                        <Save className="w-4 h-4 mr-2" />
+                                        Save Project
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px]">
+                                    <DialogHeader>
+                                        <DialogTitle>Save Project</DialogTitle>
+                                        <DialogDescription>
+                                            Give your project a name. This will save the current slider configuration and results.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label htmlFor="name" className="text-right">Name</Label>
+                                            <Input
+                                                id="name"
+                                                value={projectName}
+                                                onChange={(e) => setProjectName(e.target.value)}
+                                                className="col-span-3"
+                                                placeholder="e.g., High-Recycled Aluminium Study"
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button onClick={handleSaveProject}>Save Project</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Button onClick={handleExportPDF} className="bg-blue-600 hover:bg-blue-700">
+                                <Download className="w-4 h-4 mr-2" />
+                                Export to PDF
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </header>
 
             <div className="container mx-auto px-4 py-8">
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Left Panel - Interactive Controls (No changes needed) */}
+                    {/* Left Panel */}
                     <div className="space-y-6">
                         <Card>
                             <CardHeader><CardTitle className="text-lg">Process Parameters</CardTitle></CardHeader>
                             <CardContent className="space-y-8">
-                                {/* All sliders will now correctly trigger the data fetching */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-sm font-medium text-slate-700">% Recycled Content</label>
@@ -159,7 +234,7 @@ export default function ComparePage() {
                         </Card>
                     </div>
 
-                    {/* Right Panel - Visualizations (UPDATED to use live data and show loading states) */}
+                    {/* Right Panel */}
                     <div className="space-y-6">
                         <Card>
                             <CardHeader><CardTitle className="text-lg">Global Warming Potential (kg CO₂e)</CardTitle></CardHeader>
@@ -217,3 +292,4 @@ export default function ComparePage() {
         </div>
     )
 }
+
