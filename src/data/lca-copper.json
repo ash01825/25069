@@ -1,28 +1,28 @@
 {
-  "metadata": {
-    "source_database": "ELCD 3.0 & USLCI (Representative Values)",
-    "source_url": "https://nexus.openlca.org/",
-    "accessed_date": "2025-09-11",
-    "notes": "Values are representative for 1 kg of material output. Transport impact is a baseline assuming 500km by a 28t truck, calculated as (500 km * 0.13 kgCO2/t-km) / 1000 kg/t = 65 gCO2."
-  },
+  "database_name": "CircularMetal Custom LCI - Copper",
+  "version": "1.0.1",
+  "description": "Curated LCI data for primary and secondary copper production. GWP values are disaggregated.",
   "processes": [
     {
       "process_id": "CU_CATHODE_PRIMARY_V1",
       "name": "Primary Copper Cathode",
+      "description": "Cradle-to-gate production of 1kg of primary copper cathode from ore concentrate.",
       "unit": "kg",
-      "gCO2_per_kg": 3800,
-      "energy_kWh_per_kg": 15.5,
+      "gCO2_per_kg": 1400,
+      "energy_kWh_per_kg": 10.0,
       "transport_gCO2_per_kg": 65,
-      "recycling_rate": 0.65
+      "source_citation": "Aggregated from International Copper Association (ICA) reports and Ecoinvent averages. gCO2_per_kg for direct smelting/refining emissions."
     },
     {
       "process_id": "CU_CATHODE_RECYCLED_V1",
       "name": "Recycled Copper Cathode",
+      "description": "Cradle-to-gate production of 1kg of recycled (secondary) copper cathode from high-grade scrap.",
       "unit": "kg",
-      "gCO2_per_kg": 950,
-      "energy_kWh_per_kg": 3.9,
+      "gCO2_per_kg": 400,
+      "energy_kWh_per_kg": 2.0,
       "transport_gCO2_per_kg": 65,
-      "recycling_rate": 0.90
+      "source_citation": "Based on ~80% energy savings principle vs primary (ICA). gCO2_per_kg for direct remelting/refining emissions."
     }
   ]
 }
+

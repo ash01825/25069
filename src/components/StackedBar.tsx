@@ -1,63 +1,59 @@
+// src/components/StackedBar.tsx
 "use client"
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
-interface StackedBarProps {
-  config: {
-    recycledContent: number
-    gridEmissions: number
-    transportDistance: number
-    recyclingRate: number
-  }
+// Type definition for the API result object
+interface LcaResult {
+    gwpBreakdown: {
+        materialProduction: number;
+        transport: number;
+        gridEnergy: number;
+    };
+    // other fields are not needed by this component
 }
 
-export function StackedBar({ config }: StackedBarProps) {
-  // Calculate mock GWP values based on configuration
-  const calculateGWP = () => {
-    const baseEnergy = 15 - (config.recycledContent / 100) * 10 // Recycled content reduces energy
-    const energyGWP = baseEnergy * (config.gridEmissions / 1000)
-    const transportGWP = (config.transportDistance / 1000) * 0.5
-    const smeltingGWP = 8 - (config.recycledContent / 100) * 6 // Less smelting for recycled
-    const recyclingGWP = (config.recyclingRate / 100) * 2
+// UPDATED Props to accept two pathways for comparison
+interface StackedBarProps {
+    primaryData: LcaResult;
+    configuredData: LcaResult;
+}
 
-    return [
-      {
-        pathway: "Primary Al",
-        energy: energyGWP + 5,
-        transport: transportGWP + 1,
-        smelting: smeltingGWP + 3,
-        recycling: 0.5,
-      },
-      {
-        pathway: "Recycled Al",
-        energy: energyGWP,
-        transport: transportGWP,
-        smelting: smeltingGWP,
-        recycling: recyclingGWP,
-      },
+export function StackedBar({ primaryData, configuredData }: StackedBarProps) {
+    // Format the data into the structure Recharts expects for side-by-side bars
+    const data = [
+        {
+            pathway: "Primary Pathway",
+            "Material Production": primaryData.gwpBreakdown.materialProduction,
+            "Grid Energy": primaryData.gwpBreakdown.gridEnergy,
+            "Transport": primaryData.gwpBreakdown.transport,
+        },
+        {
+            pathway: "Configured Pathway",
+            "Material Production": configuredData.gwpBreakdown.materialProduction,
+            "Grid Energy": configuredData.gwpBreakdown.gridEnergy,
+            "Transport": configuredData.gwpBreakdown.transport,
+        },
     ]
-  }
 
-  const data = calculateGWP()
-
-  return (
-    <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="pathway" />
-          <YAxis label={{ value: "kg CO₂e", angle: -90, position: "insideLeft" }} />
-          <Tooltip
-            formatter={(value: number) => [`${value.toFixed(2)} kg CO₂e`, ""]}
-            labelFormatter={(label) => `Pathway: ${label}`}
-          />
-          <Legend />
-          <Bar dataKey="energy" stackId="a" fill="#3b82f6" name="Energy" />
-          <Bar dataKey="transport" stackId="a" fill="#10b981" name="Transport" />
-          <Bar dataKey="smelting" stackId="a" fill="#f59e0b" name="Smelting" />
-          <Bar dataKey="recycling" stackId="a" fill="#8b5cf6" name="Recycling" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
+    return (
+        // Ensure the container has a defined height to prevent rendering issues
+        <div className="w-full h-80">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="pathway" />
+                    <YAxis label={{ value: "kg CO₂e", angle: -90, position: "insideLeft" }} />
+                    <Tooltip
+                        formatter={(value: number, name: string) => [`${value.toFixed(2)} kg CO₂e`, name]}
+                        cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }} // slate-100 with opacity
+                    />
+                    <Legend />
+                    <Bar dataKey="Material Production" stackId="a" fill="#f59e0b" name="Material Production" />
+                    <Bar dataKey="Grid Energy" stackId="a" fill="#3b82f6" name="Grid Energy" />
+                    <Bar dataKey="Transport" stackId="a" fill="#10b981" name="Transport" />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    )
 }
