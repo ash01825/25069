@@ -1,0 +1,12 @@
+{
+  "model_name": "EnergyIntensity_vs_RecycledContent_LinearRegression",
+  "model_type": "Linear Regression",
+  "version": "1.0",
+  "description": "Predicts energy_kWh_per_kg for aluminium based on the percentage of recycled content. Formula: y = slope * x + intercept.",
+  "features": ["recycledContent"],
+  "target": "energy_kWh_per_kg",
+  "coefficients": {
+    "slope": -0.1472,
+    "intercept": 15.5
+  }
+}

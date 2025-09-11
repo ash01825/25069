@@ -53,6 +53,7 @@ export default function ComparePage() {
     const [primaryResult, setPrimaryResult] = useState<LcaResult | null>(null);
     const [configuredResult, setConfiguredResult] = useState<LcaResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [imputationMeta, setImputationMeta] = useState<any[]>([]); // NEW: State for API metadata
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
     const [projectName, setProjectName] = useState("");
     const { toast } = useToast();
@@ -76,6 +77,7 @@ export default function ComparePage() {
 
                 setPrimaryResult(primaryData.project_imputed.results);
                 setConfiguredResult(configuredData.project_imputed.results);
+                setImputationMeta(configuredData.imputation_meta); // NEW: Save the metadata from the API
 
             } catch (error) {
                 console.error("Failed to fetch LCA data:", error);
@@ -99,7 +101,6 @@ export default function ComparePage() {
             return;
         }
 
-        // Ensure we have results to save before proceeding.
         if (!configuredResult) {
             toast({ title: "Cannot save", description: "Please wait for results to be calculated.", variant: "destructive"});
             return;
@@ -109,7 +110,6 @@ export default function ComparePage() {
             .from('projects')
             .insert([{
                 name: projectName,
-                // We now save an object containing both inputs and outputs
                 project_data: {
                     inputs: config,
                     outputs: configuredResult
@@ -137,7 +137,6 @@ export default function ComparePage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            {/* Header and other JSX remains the same */}
             <header className="border-b bg-white print:hidden">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
@@ -210,7 +209,10 @@ export default function ComparePage() {
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <label className="text-sm font-medium text-slate-700">Grid Emissions</label>
-                                            <ImputedBadge confidence={60} />
+                                            {/* UPDATED: Badge now uses live confidence score from the API */}
+                                            {imputationMeta.length > 0 && imputationMeta[0].field === 'energy_kWh_per_kg' && (
+                                                <ImputedBadge confidence={Math.round(imputationMeta[0].confidence * 100)} />
+                                            )}
                                         </div>
                                         <span className="text-sm text-slate-600">{config.gridEmissions} gCO₂/kWh</span>
                                     </div>
