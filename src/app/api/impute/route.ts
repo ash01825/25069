@@ -1,111 +1,86 @@
 import { NextResponse } from 'next/server';
-import lciAluminiumData from '@/data/lca-aluminium.json';
-// --- NEW: Import the machine learning model coefficients ---
 import modelCoefficients from '@/models/lr_coefficients.json';
+import { createModelInput, predictRecyclingRate } from '@/lib/interface';
 
-// --- TYPE DEFINITIONS (Unchanged) ---
-interface QuickCompareInput {
-    recycledContent: number;
-    gridEmissions: number;
-    transportDistance: number;
-    recyclingRate: number;
+// --- TYPE DEFINITIONS ---
+// This defines the structure of the incoming project data from the frontend.
+// It's more generic now to handle both Quick Compare and Custom Projects.
+interface Project {
+    name: string;
+    // --- Fields for the Linear Regression Energy Model ---
+    recycledContent?: number; // e.g., 60 for 60%
+    energy_kWh_per_kg?: number | null; // Can be null, which we need to impute
+
+    // --- Fields for the Decision Tree Recycling Rate Model ---
+    material?: string; // e.g., "Aluminium"
+    product_type?: string; // e.g., "Beverage Can"
+    region?: string; // e.g., "EU"
+    end_of_life_recycling_rate?: number | null; // Can be null, which we need to impute
+
+    // Other project fields can go here
+    [key: string]: any;
 }
 
-interface LcaResult {
-    totalGwp: number;
-    gwpBreakdown: {
-        materialProduction: number;
-        transport: number;
-        gridEnergy: number;
-    };
-    totalEnergy: number;
-    circularityScore: number;
+interface ImputationMetadata {
+    field: string;
+    method: string;
+    confidence: number;
+    source: string;
 }
 
-// --- CORE CALCULATION LOGIC (UPDATED) ---
-function calculateQuickCompareLCA(input: QuickCompareInput): LcaResult {
-    const primaryProcess = lciAluminiumData.processes.find(p => p.process_id === "AL_INGOT_PRIMARY_ELCD_V1");
-    const recycledProcess = lciAluminiumData.processes.find(p => p.process_id === "AL_INGOT_RECYCLED_ELCD_V1");
-
-    if (!primaryProcess || !recycledProcess) {
-        throw new Error("Core LCI process data for Aluminium is missing.");
-    }
-
-    const recycledRatio = input.recycledContent / 100;
-    const primaryRatio = 1 - recycledRatio;
-
-    // --- 1. GWP from Material Production (Unchanged) ---
-    const materialGwpInGrams = (primaryRatio * primaryProcess.gCO2_per_kg) + (recycledRatio * recycledProcess.gCO2_per_kg);
-    const materialGwp = materialGwpInGrams / 1000;
-
-    // --- 2. Energy Calculation via ML Model Inference (THE CORE CHANGE for Day 4) ---
-    const predictedEnergy = (modelCoefficients.coefficients.slope * input.recycledContent) + modelCoefficients.coefficients.intercept;
-    // We use the predicted value instead of blending from the JSON file.
-    const materialEnergy = predictedEnergy;
-
-    // --- 3. GWP from Transport (Unchanged) ---
-    const BASELINE_TRANSPORT_DISTANCE_KM = 500;
-    const baselineTransportGwpInGrams = (primaryRatio * primaryProcess.transport_gCO2_per_kg) + (recycledRatio * recycledProcess.transport_gCO2_per_kg);
-    const transportGwp = (baselineTransportGwpInGrams / 1000) * (input.transportDistance / BASELINE_TRANSPORT_DISTANCE_KM);
-
-    // --- 4. GWP from Grid Energy (Now uses the predicted energy value) ---
-    const gridGwp = materialEnergy * (input.gridEmissions / 1000);
-    const totalGwp = materialGwp + transportGwp + gridGwp;
-
-    // --- 5. Circularity Score Calculation (Unchanged from previous fix) ---
-    const recycledContentNormalized = input.recycledContent / 100;
-    const endOfLifeRecoveryNormalized = input.recyclingRate / 100;
-    const reusePotentialNormalized = 0.3;
-    const materialLossNormalized = 0.05;
-    const circularityScore = 100 * (
-        0.4 * recycledContentNormalized +
-        0.3 * endOfLifeRecoveryNormalized +
-        0.2 * reusePotentialNormalized +
-        0.1 * (1 - materialLossNormalized)
-    );
-
-    return {
-        totalGwp: parseFloat(totalGwp.toFixed(3)),
-        gwpBreakdown: {
-            materialProduction: parseFloat(materialGwp.toFixed(3)),
-            transport: parseFloat(transportGwp.toFixed(3)),
-            gridEnergy: parseFloat(gridGwp.toFixed(3)),
-        },
-        totalEnergy: parseFloat(materialEnergy.toFixed(3)),
-        circularityScore: parseFloat(circularityScore.toFixed(1)),
-    };
-}
-
-// --- API ENDPOINT HANDLER (UPDATED to reflect AI imputation) ---
+// --- API ENDPOINT HANDLER (The Core Update) ---
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const projectInput: QuickCompareInput = body.project;
+        const project: Project = body.project;
 
-        if (
-            projectInput?.recycledContent === undefined ||
-            projectInput?.gridEmissions === undefined ||
-            projectInput?.transportDistance === undefined ||
-            projectInput?.recyclingRate === undefined
-        ) {
-            return NextResponse.json({ message: 'Missing required project parameters.' }, { status: 400 });
+        if (!project) {
+            return NextResponse.json({ message: 'Missing project data in request body.' }, { status: 400 });
         }
 
-        const lcaResult = calculateQuickCompareLCA(projectInput);
+        // Initialize our outputs
+        const project_imputed = { ...project };
+        const imputation_meta: ImputationMetadata[] = [];
 
-        const project_imputed = {
-            ...projectInput,
-            results: lcaResult,
-        };
+        // --- MODEL 1: ENERGY IMPUTATION (Linear Regression from Sprint 1) ---
+        // If energy is missing but we have recycledContent, we impute it.
+        if ((project.energy_kWh_per_kg === null || project.energy_kWh_per_kg === undefined) && project.recycledContent !== undefined) {
+            const predictedEnergy = (modelCoefficients.coefficients.slope * project.recycledContent) + modelCoefficients.coefficients.intercept;
+            project_imputed.energy_kWh_per_kg = parseFloat(predictedEnergy.toFixed(3));
 
-        // --- UPDATED: The metadata now explicitly states an AI model was used ---
-        const imputation_meta = [{
-            field: "energy_kWh_per_kg",
-            method: "AI-assisted estimation",
-            confidence: 0.85, // Confidence is higher as it's a model, not a simple rule
-            source: modelCoefficients.model_name
-        }];
+            imputation_meta.push({
+                field: "energy_kWh_per_kg",
+                method: "AI-assisted (Linear Regression)",
+                confidence: 0.85,
+                source: modelCoefficients.model_name
+            });
+        }
 
+        // --- MODEL 2: RECYCLING RATE IMPUTATION (Decision Tree for Day 8) ---
+        // If recycling rate is missing but we have the required inputs, we impute it.
+        if ((project.end_of_life_recycling_rate === null || project.end_of_life_recycling_rate === undefined) && project.material && project.product_type && project.region) {
+
+            // Step 1: Convert user-friendly input into the one-hot encoded format our model needs.
+            const modelInput = createModelInput(project.material, project.product_type, project.region);
+
+            // Step 2: Get the prediction from our decision tree.
+            const predictedRate = predictRecyclingRate(modelInput);
+
+            if (predictedRate !== null) {
+                project_imputed.end_of_life_recycling_rate = predictedRate;
+
+                imputation_meta.push({
+                    field: "end_of_life_recycling_rate",
+                    method: "AI-assisted (Decision Tree)",
+                    confidence: 0.75, // Confidence can be adjusted based on model performance
+                    source: "Internal Model from ELCD/USLCI sample data"
+                });
+            }
+        }
+
+        // --- FINAL RESPONSE ---
+        // Return the project object (now with imputed values) and the metadata
+        // explaining what we imputed and how.
         return NextResponse.json({
             project_imputed,
             imputation_meta
@@ -116,4 +91,3 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
     }
 }
-
