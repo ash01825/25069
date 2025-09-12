@@ -333,10 +333,7 @@ export default function HomePage() {
           viewport={{ once: true }}
           className="relative z-10 border-t border-white/20 py-4 text-center text-xs text-gray-400"
         >
-          KIKIN FINANCIAL LIMITED is registered with the Financial Conduct
-          Authority (FCA) under the Money Laundering, Terrorist Financing, and
-          Transfer of Funds (Information on the Payer) Regulations 2017 (reg.
-          1016692)
+            © 2025 Zyrcle. All Rights Reserved. This is a functional prototype for demonstration purposes only.
         </motion.div>
       </footer>
     </div>
