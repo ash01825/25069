@@ -1,37 +1,49 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Upload, Eye, Plus } from "lucide-react";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Upload, Eye, Plus } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ImputedBadge } from "@/components/ImputedBadge"
-import { ExplainBubble } from "@/components/ExplainBubble"
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { ImputedBadge } from "@/components/ImputedBadge";
+import { ExplainBubble } from "@/components/ExplainBubble";
 
 interface LCIParameter {
-    name: string
-    value: number
-    unit: string
-    isImputed: boolean
-    confidence: number
+    name: string;
+    value: number;
+    unit: string;
+    isImputed: boolean;
+    confidence: number;
 }
 
 interface ProjectData {
-    id: string
-    name: string
-    material: string
-    region: string
-    lciParameters: LCIParameter[]
+    id: string;
+    name: string;
+    material: string;
+    region: string;
+    lciParameters: LCIParameter[];
 }
 
 export default function CustomProjectPage({ params }: { params: { id: string } }) {
-    const router = useRouter()
+    const router = useRouter();
 
     // Mock project data - in real app this would come from API/database
     const [project, setProject] = useState<ProjectData>({
@@ -40,40 +52,79 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
         material: "Aluminium",
         region: "EU",
         lciParameters: [
-            { name: "Energy Consumption", value: 15.2, unit: "kWh/kg", isImputed: false, confidence: 95 },
-            { name: "Transport Distance", value: 450, unit: "km", isImputed: true, confidence: 78 },
-            { name: "Smelting Energy", value: 8.7, unit: "kWh/kg", isImputed: true, confidence: 82 },
-            { name: "Recycling Rate", value: 75, unit: "%", isImputed: false, confidence: 90 },
-            { name: "Water Usage", value: 2.3, unit: "L/kg", isImputed: true, confidence: 65 },
-            { name: "Waste Generation", value: 0.15, unit: "kg/kg", isImputed: true, confidence: 70 },
+            {
+                name: "Energy Consumption",
+                value: 15.2,
+                unit: "kWh/kg",
+                isImputed: false,
+                confidence: 95,
+            },
+            {
+                name: "Transport Distance",
+                value: 450,
+                unit: "km",
+                isImputed: true,
+                confidence: 78,
+            },
+            {
+                name: "Smelting Energy",
+                value: 8.7,
+                unit: "kWh/kg",
+                isImputed: true,
+                confidence: 82,
+            },
+            {
+                name: "Recycling Rate",
+                value: 75,
+                unit: "%",
+                isImputed: false,
+                confidence: 90,
+            },
+            {
+                name: "Water Usage",
+                value: 2.3,
+                unit: "L/kg",
+                isImputed: true,
+                confidence: 65,
+            },
+            {
+                name: "Waste Generation",
+                value: 0.15,
+                unit: "kg/kg",
+                isImputed: true,
+                confidence: 70,
+            },
         ],
-    })
+    });
 
     const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
+        const file = event.target.files?.[0];
         if (file) {
             // TODO: Implement CSV upload and parse
-            console.log("TODO: Implement CSV upload and parse", file.name)
+            console.log("TODO: Implement CSV upload and parse", file.name);
         }
-    }
+    };
 
     const handleParameterChange = (index: number, newValue: number) => {
-        const updatedParameters = [...project.lciParameters]
-        updatedParameters[index] = { ...updatedParameters[index], value: newValue }
-        setProject({ ...project, lciParameters: updatedParameters })
-    }
+        const updatedParameters = [...project.lciParameters];
+        updatedParameters[index] = {
+            ...updatedParameters[index],
+            value: newValue,
+        };
+        setProject({ ...project, lciParameters: updatedParameters });
+    };
 
     const handleCreateComparison = () => {
         // Store current project state and navigate to compare page
-        const currentState = JSON.parse(JSON.stringify(project)) // Deep copy
-        localStorage.setItem("comparisonProject", JSON.stringify(currentState))
-        router.push(`/project/${params.id}/compare`)
-    }
+        const currentState = JSON.parse(JSON.stringify(project)); // Deep copy
+        localStorage.setItem("comparisonProject", JSON.stringify(currentState));
+        router.push(`/project/${params.id}/compare`);
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-[#f8f3e6]">
             {/* Header */}
-            <header className="border-b bg-white">
+            <header className="border-b bg-[#f8f3e6] print:hidden">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -83,10 +134,15 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                                     Back to Home
                                 </Button>
                             </Link>
-                            <h1 className="text-xl font-semibold text-slate-900">Custom Project: {project.name}</h1>
+                            <h1 className="text-xl font-semibold text-slate-900">
+                                Custom Project: {project.name}
+                            </h1>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button onClick={handleCreateComparison} className="bg-blue-600 hover:bg-blue-700">
+                            <Button
+                                onClick={handleCreateComparison}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Create Comparison
                             </Button>
@@ -99,7 +155,7 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                 <div className="grid lg:grid-cols-2 gap-8">
                     {/* Left Panel - Project Input Form */}
                     <div className="space-y-6">
-                        <Card>
+                        <Card className="shadow-md">
                             <CardHeader>
                                 <CardTitle className="text-lg">Project Information</CardTitle>
                             </CardHeader>
@@ -109,7 +165,9 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                                     <Input
                                         id="projectName"
                                         value={project.name}
-                                        onChange={(e) => setProject({ ...project, name: e.target.value })}
+                                        onChange={(e) =>
+                                            setProject({ ...project, name: e.target.value })
+                                        }
                                     />
                                 </div>
 
@@ -117,7 +175,9 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                                     <Label htmlFor="material">Material</Label>
                                     <Select
                                         value={project.material}
-                                        onValueChange={(value) => setProject({ ...project, material: value })}
+                                        onValueChange={(value) =>
+                                            setProject({ ...project, material: value })
+                                        }
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -132,7 +192,12 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
 
                                 <div className="space-y-2">
                                     <Label htmlFor="region">Region</Label>
-                                    <Select value={project.region} onValueChange={(value) => setProject({ ...project, region: value })}>
+                                    <Select
+                                        value={project.region}
+                                        onValueChange={(value) =>
+                                            setProject({ ...project, region: value })
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -147,15 +212,26 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="shadow-md">
                             <CardHeader>
                                 <CardTitle className="text-lg">Upload BOM CSV</CardTitle>
+                                <CardDescription>
+                                    Or manually edit parameters on the right.
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors">
+                                <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center hover:border-slate-300 transition-colors">
                                     <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                                    <p className="text-sm text-slate-600 mb-4">Upload your Bill of Materials (BOM) CSV file</p>
-                                    <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" id="csv-upload" />
+                                    <p className="text-sm text-slate-600 mb-4">
+                                        Upload your Bill of Materials (BOM) CSV file
+                                    </p>
+                                    <input
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={handleCSVUpload}
+                                        className="hidden"
+                                        id="csv-upload"
+                                    />
                                     <Button asChild variant="outline">
                                         <label htmlFor="csv-upload" className="cursor-pointer">
                                             Choose CSV File
@@ -171,32 +247,49 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
 
                     {/* Right Panel - Editable LCI Parameters Table */}
                     <div className="space-y-6">
-                        <Card>
+                        <Card className="shadow-md">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg">LCI Parameters</CardTitle>
                                     <ExplainBubble />
                                 </div>
+                                <CardDescription>
+                                    Values are auto-filled via AI. You can override any value.
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
                                     {project.lciParameters.map((param, index) => (
-                                        <div key={param.name} className="flex items-center gap-4 p-3 border rounded-lg">
+                                        <div
+                                            key={param.name}
+                                            className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                                        >
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-sm font-medium text-slate-700">{param.name}</span>
-                                                    {param.isImputed && <ImputedBadge confidence={param.confidence} />}
+                          <span className="text-sm font-medium text-slate-700">
+                            {param.name}
+                          </span>
+                                                    {param.isImputed && (
+                                                        <ImputedBadge confidence={param.confidence} />
+                                                    )}
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Input
-                                                        type="number"
-                                                        value={param.value}
-                                                        onChange={(e) => handleParameterChange(index, Number.parseFloat(e.target.value) || 0)}
-                                                        className="w-24"
-                                                        step="0.1"
-                                                    />
-                                                    <span className="text-sm text-slate-500">{param.unit}</span>
-                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="number"
+                                                    value={param.value}
+                                                    onChange={(e) =>
+                                                        handleParameterChange(
+                                                            index,
+                                                            Number.parseFloat(e.target.value) || 0
+                                                        )
+                                                    }
+                                                    className="w-28 text-right"
+                                                    step="0.1"
+                                                />
+                                                <span className="text-sm text-slate-500 w-12">
+                          {param.unit}
+                        </span>
                                             </div>
                                         </div>
                                     ))}
@@ -205,7 +298,7 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                         </Card>
 
                         {/* Data Sources */}
-                        <Card>
+                        <Card className="shadow-md">
                             <CardHeader>
                                 <CardTitle className="text-lg">Data Sources</CardTitle>
                             </CardHeader>
@@ -215,27 +308,27 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                                         href="https://eplca.jrc.ec.europa.eu/ELCD3/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full hover:bg-blue-200 transition-colors"
+                                        className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full hover:bg-blue-200 transition-colors"
                                     >
-                                        <Eye className="w-3 h-3 mr-1" />
+                                        <Eye className="w-3 h-3 mr-1.5" />
                                         ELCD Database
                                     </a>
                                     <a
                                         href="https://www.nrel.gov/lci/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full hover:bg-green-200 transition-colors"
+                                        className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full hover:bg-green-200 transition-colors"
                                     >
-                                        <Eye className="w-3 h-3 mr-1" />
+                                        <Eye className="w-3 h-3 mr-1.5" />
                                         USLCI (NREL)
                                     </a>
                                     <a
                                         href="https://nexus.openlca.org/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full hover:bg-purple-200 transition-colors"
+                                        className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full hover:bg-purple-200 transition-colors"
                                     >
-                                        <Eye className="w-3 h-3 mr-1" />
+                                        <Eye className="w-3 h-3 mr-1.5" />
                                         openLCA Nexus
                                     </a>
                                 </div>
@@ -245,5 +338,5 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
                 </div>
             </div>
         </div>
-    )
+    );
 }
