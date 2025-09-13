@@ -4,335 +4,177 @@ import type React from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Upload, Eye, Plus } from "lucide-react";
+import { ArrowLeft, Plus, BrainCircuit, Loader2 } from "lucide-react";
 
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImputedBadge } from "@/components/ImputedBadge";
-import { ExplainBubble } from "@/components/ExplainBubble";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface LCIParameter {
+// --- Types & Defaults ---
+type Material = 'Aluminium' | 'Copper';
+interface ProjectInput {
     name: string;
-    value: number;
-    unit: string;
-    isImputed: boolean;
+    material: Material;
+    product_type: string;
+    region: 'EU' | 'US' | 'CN' | 'Global';
+    mass_kg: number;
+    recycledContent: number | null;
+    gridEmissions_gCO2_per_kWh: number | null;
+    transportDistance_km: number | null;
+    end_of_life_recycling_rate: number | null;
+}
+interface ImputationMeta {
+    field: keyof ProjectInput;
+    method: string;
     confidence: number;
 }
-
-interface ProjectData {
-    id: string;
-    name: string;
-    material: string;
-    region: string;
-    lciParameters: LCIParameter[];
-}
+const aluminiumDefaults = {
+    name: "Aluminium Beverage Cans",
+    material: "Aluminium" as Material,
+    product_type: "Beverage Can",
+    mass_kg: 1000,
+    recycledContent: 65,
+    gridEmissions_gCO2_per_kWh: 450,
+    transportDistance_km: 500,
+    end_of_life_recycling_rate: null,
+};
+const copperDefaults = {
+    name: "Copper Industrial Cable",
+    material: "Copper" as Material,
+    product_type: "Industrial Cable",
+    mass_kg: 2500,
+    recycledContent: 40,
+    gridEmissions_gCO2_per_kWh: 450,
+    transportDistance_km: 800,
+    end_of_life_recycling_rate: null,
+};
 
 export default function CustomProjectPage({ params }: { params: { id: string } }) {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [project, setProject] = useState<ProjectInput>({ ...aluminiumDefaults, region: 'EU' });
+    const [imputationMeta, setImputationMeta] = useState<ImputationMeta[]>([]);
+    const [lcaResults, setLcaResults] = useState<any | null>(null);
 
-    // Mock project data - in real app this would come from API/database
-    const [project, setProject] = useState<ProjectData>({
-        id: params.id,
-        name: "Aluminium Extrusion Project",
-        material: "Aluminium",
-        region: "EU",
-        lciParameters: [
-            {
-                name: "Energy Consumption",
-                value: 15.2,
-                unit: "kWh/kg",
-                isImputed: false,
-                confidence: 95,
-            },
-            {
-                name: "Transport Distance",
-                value: 450,
-                unit: "km",
-                isImputed: true,
-                confidence: 78,
-            },
-            {
-                name: "Smelting Energy",
-                value: 8.7,
-                unit: "kWh/kg",
-                isImputed: true,
-                confidence: 82,
-            },
-            {
-                name: "Recycling Rate",
-                value: 75,
-                unit: "%",
-                isImputed: false,
-                confidence: 90,
-            },
-            {
-                name: "Water Usage",
-                value: 2.3,
-                unit: "L/kg",
-                isImputed: true,
-                confidence: 65,
-            },
-            {
-                name: "Waste Generation",
-                value: 0.15,
-                unit: "kg/kg",
-                isImputed: true,
-                confidence: 70,
-            },
-        ],
-    });
+    const handleSanitizedInputChange = (field: keyof ProjectInput, value: string) => {
+        const sanitizedValue = value.replace(/[^0-9.]/g, '');
+        setProject(prev => ({ ...prev, [field]: sanitizedValue === '' ? null : Number(sanitizedValue) }));
+    };
 
-    const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            // TODO: Implement CSV upload and parse
-            console.log("TODO: Implement CSV upload and parse", file.name);
+    const handleSelectChange = (field: keyof ProjectInput, value: string) => {
+        if (field === 'material') {
+            const newDefaults = value === 'Aluminium' ? aluminiumDefaults : copperDefaults;
+            setProject(prev => ({ ...prev, ...newDefaults, region: prev.region }));
+            setLcaResults(null);
+            setImputationMeta([]);
+        } else {
+            setProject(prev => ({ ...prev, [field]: value }));
         }
     };
 
-    const handleParameterChange = (index: number, newValue: number) => {
-        const updatedParameters = [...project.lciParameters];
-        updatedParameters[index] = {
-            ...updatedParameters[index],
-            value: newValue,
-        };
-        setProject({ ...project, lciParameters: updatedParameters });
+    const handleCalculate = async () => {
+        setIsLoading(true);
+        setError(null);
+        setLcaResults(null);
+        setImputationMeta([]);
+        try {
+            const response = await fetch('/api/impute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project }),
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || "Failed to calculate results.");
+            }
+            const data = await response.json();
+            setProject(data.project_imputed);
+            setImputationMeta(data.imputation_meta);
+            setLcaResults(data.project_imputed.results);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleCreateComparison = () => {
-        // Store current project state and navigate to compare page
-        const currentState = JSON.parse(JSON.stringify(project)); // Deep copy
-        localStorage.setItem("comparisonProject", JSON.stringify(currentState));
+        if (!lcaResults) {
+            setError("Please calculate the project impact before creating a comparison.");
+            return;
+        }
+        const fullProjectState = { ...project, results: lcaResults };
+        localStorage.setItem("originalProject", JSON.stringify(fullProjectState));
         router.push(`/project/${params.id}/compare`);
     };
 
+    const getImputationForField = (field: keyof ProjectInput) => imputationMeta.find(m => m.field === field);
+    const productTypes = [ "Automotive Components", "Beverage Can", "Building Construction", "Cookware", "Electronics (PCB)", "Industrial Cable", "Packaging Foil" ];
+
     return (
         <div className="min-h-screen bg-[#f8f3e6]">
-            {/* Header */}
-            <header className="border-b bg-[#f8f3e6] print:hidden">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/">
-                                <Button variant="ghost" size="sm">
-                                    <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Back to Home
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl font-semibold text-slate-900">
-                                Custom Project: {project.name}
-                            </h1>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                onClick={handleCreateComparison}
-                                className="bg-blue-600 hover:bg-blue-700"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Comparison
-                            </Button>
-                        </div>
-                    </div>
+            <header className="border-b bg-white print:hidden sticky top-0 z-10">
+                <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+                    <Link href="/"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Back</Button></Link>
+                    <h1 className="text-lg font-semibold text-slate-800">Custom Project: {project.name}</h1>
+                    <Button onClick={handleCreateComparison} className="bg-blue-600 hover:bg-blue-700" disabled={!lcaResults || isLoading}>
+                        <Plus className="w-4 h-4 mr-2" /> Create Comparison
+                    </Button>
                 </div>
             </header>
 
             <div className="container mx-auto px-4 py-8">
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Left Panel - Project Input Form */}
+                    {/* INPUTS */}
                     <div className="space-y-6">
-                        <Card className="shadow-md">
+                        <Card className="shadow-sm">
                             <CardHeader>
-                                <CardTitle className="text-lg">Project Information</CardTitle>
+                                <CardTitle>1. Define Your Project</CardTitle>
+                                <CardDescription>Enter the core details of your product or component.</CardDescription>
                             </CardHeader>
+                            <CardContent className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1 col-span-2"><Label htmlFor="name">Project Name</Label><Input id="name" value={project.name} onChange={(e) => setProject(p=>({...p, name: e.target.value}))}/></div>
+                                <div className="space-y-1"><Label htmlFor="material">Material</Label><Select value={project.material} onValueChange={(v) => handleSelectChange('material', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="Aluminium">Aluminium</SelectItem><SelectItem value="Copper">Copper</SelectItem></SelectContent></Select></div>
+                                <div className="space-y-1"><Label htmlFor="product_type">Product Type</Label><Select value={project.product_type} onValueChange={(v) => handleSelectChange('product_type', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{productTypes.map(pt => <SelectItem key={pt} value={pt}>{pt}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-1"><Label htmlFor="region">Region</Label><Select value={project.region} onValueChange={(v) => handleSelectChange('region', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="EU">Europe (EU)</SelectItem><SelectItem value="US">United States</SelectItem><SelectItem value="CN">China</SelectItem></SelectContent></Select></div>
+                                <div className="space-y-1"><Label htmlFor="mass_kg">Mass (kg)</Label><Input id="mass_kg" type="text" inputMode="decimal" value={project.mass_kg} onChange={(e) => handleSanitizedInputChange('mass_kg', e.target.value)}/></div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader><CardTitle>2. Provide LCI Parameters</CardTitle><CardDescription>Fill in what you know. We'll use AI to estimate any missing values.</CardDescription></CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="projectName">Project Name</Label>
-                                    <Input
-                                        id="projectName"
-                                        value={project.name}
-                                        onChange={(e) =>
-                                            setProject({ ...project, name: e.target.value })
-                                        }
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="material">Material</Label>
-                                    <Select
-                                        value={project.material}
-                                        onValueChange={(value) =>
-                                            setProject({ ...project, material: value })
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Aluminium">Aluminium</SelectItem>
-                                            <SelectItem value="Copper">Copper</SelectItem>
-                                            <SelectItem value="Steel">Steel</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="region">Region</Label>
-                                    <Select
-                                        value={project.region}
-                                        onValueChange={(value) =>
-                                            setProject({ ...project, region: value })
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="EU">Europe (EU)</SelectItem>
-                                            <SelectItem value="US">United States</SelectItem>
-                                            <SelectItem value="CN">China</SelectItem>
-                                            <SelectItem value="Global">Global Average</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {Object.entries({
+                                    recycledContent: { label: "Recycled Content", unit: "%" },
+                                    gridEmissions_gCO2_per_kWh: { label: "Grid Emissions", unit: "gCO2/kWh" },
+                                    transportDistance_km: { label: "Transport Distance", unit: "km" },
+                                    end_of_life_recycling_rate: { label: "End-of-Life Recycling Rate", unit: "%" },
+                                }).map(([key, { label, unit }]) => {
+                                    const fieldKey = key as keyof ProjectInput;
+                                    const imputation = getImputationForField(fieldKey);
+                                    return (
+                                        <div key={key} className="flex items-center justify-between">
+                                            <div><Label htmlFor={key} className="font-medium">{label}</Label>{imputation && <ImputedBadge confidence={imputation.confidence} />}</div>
+                                            <div className="flex items-center gap-2"><Input id={key} type="text" inputMode="decimal" placeholder="Auto" value={project[fieldKey] ?? ''} onChange={(e) => handleSanitizedInputChange(fieldKey, e.target.value)} className="w-32 text-right"/><span className="text-sm text-slate-500 w-16">{unit}</span></div>
+                                        </div>
+                                    )
+                                })}
                             </CardContent>
                         </Card>
 
-                        <Card className="shadow-md">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Upload BOM CSV</CardTitle>
-                                <CardDescription>
-                                    Or manually edit parameters on the right.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center hover:border-slate-300 transition-colors">
-                                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                                    <p className="text-sm text-slate-600 mb-4">
-                                        Upload your Bill of Materials (BOM) CSV file
-                                    </p>
-                                    <input
-                                        type="file"
-                                        accept=".csv"
-                                        onChange={handleCSVUpload}
-                                        className="hidden"
-                                        id="csv-upload"
-                                    />
-                                    <Button asChild variant="outline">
-                                        <label htmlFor="csv-upload" className="cursor-pointer">
-                                            Choose CSV File
-                                        </label>
-                                    </Button>
-                                    <p className="text-xs text-slate-500 mt-2">
-                                        Supported format: CSV with columns: Material, Quantity, Unit
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="flex flex-col items-center"><Button size="lg" onClick={handleCalculate} disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700">{isLoading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <BrainCircuit className="w-5 h-5 mr-2" />}Calculate Impact</Button>{error && <p className="text-red-600 text-sm mt-2">{error}</p>}</div>
                     </div>
 
-                    {/* Right Panel - Editable LCI Parameters Table */}
+                    {/* RESULTS */}
                     <div className="space-y-6">
-                        <Card className="shadow-md">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg">LCI Parameters</CardTitle>
-                                    <ExplainBubble />
-                                </div>
-                                <CardDescription>
-                                    Values are auto-filled via AI. You can override any value.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {project.lciParameters.map((param, index) => (
-                                        <div
-                                            key={param.name}
-                                            className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-lg"
-                                        >
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium text-slate-700">
-                            {param.name}
-                          </span>
-                                                    {param.isImputed && (
-                                                        <ImputedBadge confidence={param.confidence} />
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Input
-                                                    type="number"
-                                                    value={param.value}
-                                                    onChange={(e) =>
-                                                        handleParameterChange(
-                                                            index,
-                                                            Number.parseFloat(e.target.value) || 0
-                                                        )
-                                                    }
-                                                    className="w-28 text-right"
-                                                    step="0.1"
-                                                />
-                                                <span className="text-sm text-slate-500 w-12">
-                          {param.unit}
-                        </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Data Sources */}
-                        <Card className="shadow-md">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Data Sources</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-wrap gap-2">
-                                    <a
-                                        href="https://eplca.jrc.ec.europa.eu/ELCD3/"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full hover:bg-blue-200 transition-colors"
-                                    >
-                                        <Eye className="w-3 h-3 mr-1.5" />
-                                        ELCD Database
-                                    </a>
-                                    <a
-                                        href="https://www.nrel.gov/lci/"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full hover:bg-green-200 transition-colors"
-                                    >
-                                        <Eye className="w-3 h-3 mr-1.5" />
-                                        USLCI (NREL)
-                                    </a>
-                                    <a
-                                        href="https://nexus.openlca.org/"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full hover:bg-purple-200 transition-colors"
-                                    >
-                                        <Eye className="w-3 h-3 mr-1.5" />
-                                        openLCA Nexus
-                                    </a>
-                                </div>
-                            </CardContent>
+                        <Card className="shadow-sm sticky top-24">
+                            <CardHeader><CardTitle>Results</CardTitle><CardDescription>The calculated environmental and circularity impact.</CardDescription></CardHeader>
+                            <CardContent>{!lcaResults && !isLoading && (<div className="text-center py-12"><p className="text-slate-500">Your results will appear here after calculation.</p></div>)}{isLoading && <div className="text-center py-12"><Loader2 className="w-8 h-8 mx-auto animate-spin text-slate-400" /></div>}{lcaResults && (<div className="space-y-4"><div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><Label>Total GWP (Carbon Footprint)</Label><p className="text-3xl font-bold text-blue-800">{lcaResults.totalGwp} <span className="text-xl font-normal">kg CO₂e</span></p></div><div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg"><Label>Circularity Score</Label><p className="text-3xl font-bold text-emerald-800">{lcaResults.circularityScore} <span className="text-xl font-normal">/ 100</span></p></div><Alert><AlertTitle>Imputation Summary</AlertTitle><AlertDescription>{imputationMeta.length > 0 ? `We used AI to impute ${imputationMeta.length} value(s) to complete the analysis.` : `All values were provided. No imputation was needed.`}</AlertDescription></Alert></div>)}</CardContent>
                         </Card>
                     </div>
                 </div>
@@ -340,3 +182,4 @@ export default function CustomProjectPage({ params }: { params: { id: string } }
         </div>
     );
 }
+
